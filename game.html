@@ -116,11 +116,7 @@
             <div class="text-right bg-gradient-to-r from-emerald-900/40 to-teal-900/40 rounded-lg p-3 border border-emerald-600/50"><p class="text-xs text-slate-400">Selected</p><p class="text-2xl font-bold text-emerald-400"><span id="selection-count">0</span><span class="text-slate-400">/3</span></p></div>
           </div>
 
-          <div class="flex gap-3 mb-4 text-xs flex-wrap">
-            <span class="badge-high px-2 py-1 rounded-md font-semibold">🔴 HIGH Impact (&gt;1,000t CO₂/yr)</span>
-            <span class="badge-medium px-2 py-1 rounded-md font-semibold">🟡 MEDIUM Impact (300–999t)</span>
-            <span class="badge-low px-2 py-1 rounded-md font-semibold">⚪ LOW / Resilience (&lt;300t)</span>
-          </div>
+
 
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
             <div class="bg-slate-800/40 rounded-2xl p-4 border border-slate-700/50"><h3 class="text-emerald-400 font-bold mb-3 text-sm">🏛️ Leadership &amp; Governance</h3><div class="space-y-2" id="leadership-decisions"></div></div>
@@ -189,7 +185,7 @@
 
 <script>
 /* ── FIREBASE CONFIG ── replace URL with your own ── */
-const FIREBASE_DB_URL = 'https://heal-moderator-dashboard-default-rtdb.firebaseio.com';
+const FIREBASE_DB_URL = 'https://YOUR-PROJECT-default-rtdb.firebaseio.com';
 
 let _sessionCode='',_playerId='',_playerName='';
 function _genId(){return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
@@ -514,12 +510,10 @@ function populateInitiatives(year){
   Object.values(containers).forEach(c=>c.innerHTML='');
   all.forEach(initiative=>{
     const impact=initiative.impact||'LOW';
-    const bc=impact==='HIGH'?'badge-high':impact==='MEDIUM'?'badge-medium':'badge-low';
-    const bl=impact==='HIGH'?'🔴 HIGH':impact==='MEDIUM'?'🟡 MEDIUM':'⚪ LOW';
     const card=document.createElement('div');
     card.className='decision-card bg-slate-700/50 rounded-lg p-3 border-2 border-transparent cursor-pointer hover:bg-slate-700';
     card.dataset.id=initiative.id;card.title=initiative.description||'';
-    card.innerHTML=`<div class="flex items-start gap-2"><span class="text-base flex-shrink-0 mt-0.5">${initiative.icon}</span><div class="min-w-0 flex-1"><div class="flex items-center gap-2 mb-0.5 flex-wrap"><span class="font-medium text-slate-200 text-sm">${initiative.name}</span><span class="text-xs px-1.5 py-0.5 rounded ${bc} font-semibold flex-shrink-0">${bl}</span></div><span class="text-xs text-slate-400 line-clamp-2">${initiative.description||''}</span></div></div>`;
+    card.innerHTML=`<div class="flex items-start gap-2"><span class="text-base flex-shrink-0 mt-0.5">${initiative.icon}</span><div class="min-w-0 flex-1"><div class="flex items-center gap-2 mb-0.5"><span class="font-medium text-slate-200 text-sm">${initiative.name}</span></div><span class="text-xs text-slate-400 line-clamp-2">${initiative.description||''}</span></div></div>`;
     card.addEventListener('click',()=>toggleInitiative(initiative.id,card));
     if(containers[initiative.category])containers[initiative.category].appendChild(card);
   });
@@ -589,12 +583,12 @@ function showNextEvent(){
       document.getElementById('event-title').textContent='Carbon Tax Imposed!';
       const c=gameState.eventImpacts.tax||465000;
       document.getElementById('event-description').textContent=`Singapore has introduced a carbon tax on fossil fuels. Your hospital's high grid electricity consumption has significantly increased operational costs by $${(c/1000).toFixed(0)}K.`;
-      document.getElementById('event-impacts').innerHTML=`<div class="text-slate-300 text-sm"><strong>Impact:</strong> Operating costs increased by $${(c/1000).toFixed(0)}K</div><div class="text-slate-300 text-sm"><strong>Prevention:</strong> Prioritise high-impact energy reduction initiatives — Green Building Upgrade (Green Mark), District Cooling, Smart Climate Control, and LED Lighting — to substantially reduce grid electricity dependency before carbon pricing takes effect.</div>`;
+      document.getElementById('event-impacts').innerHTML=`<div class="text-slate-300 text-sm"><strong>Impact:</strong> Operating costs increased by $${(c/1000).toFixed(0)}K</div><div class="text-slate-300 text-sm"><strong>Prevention:</strong> Prioritise high-impact energy reduction initiatives — substantially reduce grid electricity dependency to reduce the impact of carbon pricing.</div>`;
     }else if(eid==='flood'){
       document.getElementById('event-emoji').textContent='🌊';
       document.getElementById('event-title').textContent='Severe Flood!';
       const c=gameState.eventImpacts.flood||2000000;
-      document.getElementById('event-description').textContent=`A catastrophic flood has hit your area. Without a Climate Resilience Plan in place, your backup systems were overwhelmed, causing emergency diversions and equipment damage worth $${(c/1000000).toFixed(1)}M.`;
+      document.getElementById('event-description').textContent=`A localised flood due to extreme weather conditions has hit your hospital. Without a Climate Resilience Plan in place, your backup systems were overwhelmed, causing emergency diversions and equipment damage worth $${(c/1000000).toFixed(1)}M.`;
       document.getElementById('event-impacts').innerHTML=`<div class="text-slate-300 text-sm"><strong>Impact:</strong> $${(c/1000000).toFixed(1)}M cost, patient satisfaction and staff morale severely affected</div><div class="text-slate-300 text-sm"><strong>Prevention:</strong> Invest in Climate Resilience Planning early in your 7-year journey</div>`;
     }else if(eid==='haze'){
       document.getElementById('event-emoji').textContent='🌫️';
@@ -628,9 +622,8 @@ function showResults(feedbacks){
   const ih=document.createElement('p');ih.className='text-emerald-400 font-semibold mb-3 text-sm';ih.textContent='✓ Initiative Impact:';fs.appendChild(ih);
   const ic=document.createElement('div');ic.className='grid grid-cols-1 lg:grid-cols-3 gap-3';
   feedbacks.forEach(item=>{
-    const impact=item.impact||'LOW';const bc=impact==='HIGH'?'badge-high':impact==='MEDIUM'?'badge-medium':'badge-low';
     const fb=document.createElement('div');fb.className='bg-slate-800/60 rounded-lg p-3 border border-emerald-700/30';
-    fb.innerHTML=`<div class="flex items-center gap-2 mb-1 flex-wrap"><p class="font-semibold text-emerald-400 text-sm">${item.name}</p><span class="text-xs px-1.5 py-0.5 rounded ${bc} font-semibold">${impact}</span></div><p class="text-slate-300 text-xs">${item.feedback}</p>`;
+    fb.innerHTML=`<p class="font-semibold text-emerald-400 text-sm mb-1">${item.name}</p><p class="text-slate-300 text-xs">${item.feedback}</p>`;
     ic.appendChild(fb);
   });
   fs.appendChild(ic);
