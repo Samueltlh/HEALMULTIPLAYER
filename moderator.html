@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moderator Dashboard — Healthcare Emissions Action Lab</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Poppins', sans-serif; }
+    @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .live-dot { animation: pulse-dot 1.5s infinite; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    .fade-in { animation: fadeIn 0.35s ease-out; }
+    .player-card { transition: all 0.25s ease; }
+    .player-card:hover { transform: translateY(-2px); }
+    .year-pip { width:10px; height:10px; border-radius:50%; display:inline-block; margin:0 1px; }
+    ::-webkit-scrollbar { width:6px; } ::-webkit-scrollbar-track { background:#1e293b; } ::-webkit-scrollbar-thumb { background:#334155; border-radius:4px; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 min-h-screen text-white">
+
+<!-- ═══════════════════════════════════════════
+     SETUP PANEL — shown before session exists
+═══════════════════════════════════════════ -->
+<div id="setup-panel" class="min-h-screen flex items-center justify-center p-6">
+  <div class="fade-in bg-slate-800/60 backdrop-blur rounded-2xl p-10 max-w-lg w-full border border-emerald-700/30 shadow-2xl text-center">
+    <div class="text-6xl mb-4">🏥</div>
+    <h1 class="text-3xl font-bold bg-gradient-to-r from-emerald-300 to-teal-300 bg-clip-text text-transparent mb-1">Moderator Dashboard</h1>
+    <p class="text-slate-400 text-sm mb-8">Healthcare Emissions Action Lab — Live Session Control</p>
+
+    <div class="space-y-4 text-left mb-8">
+      <div>
+        <label class="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Firebase Database URL</label>
+        <input id="db-url-input" type="url" placeholder="https://YOUR-PROJECT-default-rtdb.firebaseio.com"
+          class="w-full bg-slate-700/80 border border-slate-600 rounded-lg px-4 py-3 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
+        <p class="text-xs text-slate-500 mt-1">Paste your Firebase Realtime Database URL here</p>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Moderator Name</label>
+        <input id="moderator-name" type="text" placeholder="e.g. Dr. Smith" maxlength="40"
+          class="w-full bg-slate-700/80 border border-slate-600 rounded-lg px-4 py-3 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
+      </div>
+      <div id="setup-error" class="hidden text-rose-400 text-sm bg-rose-900/20 border border-rose-700/30 rounded-lg px-4 py-2"></div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <button onclick="createSession()"
+        class="py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 rounded-xl font-bold text-white transition-all">
+        ＋ New Session
+      </button>
+      <button onclick="showReconnectInput()"
+        class="py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-semibold text-white transition-all">
+        ↩ Reconnect
+      </button>
+    </div>
+    <div id="reconnect-row" class="hidden mt-3 flex gap-2">
+      <input id="reconnect-code" type="text" maxlength="6" placeholder="Session code" class="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white uppercase tracking-widest placeholder-slate-500 focus:outline-none focus:border-emerald-500">
+      <button onclick="reconnectSession()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg font-semibold transition">Go</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MAIN DASHBOARD
+═══════════════════════════════════════════ -->
+<div id="dashboard" class="hidden min-h-screen flex flex-col">
+
+  <!-- Top bar -->
+  <header class="bg-slate-900/80 backdrop-blur border-b border-emerald-700/30 px-6 py-4 flex-shrink-0">
+    <div class="max-w-screen-xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h1 class="text-xl font-bold bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">🏥 Moderator Dashboard</h1>
+        <p class="text-slate-400 text-xs">Healthcare Emissions Action Lab</p>
+      </div>
+      <div class="flex items-center gap-4 flex-wrap">
+        <!-- Session code badge -->
+        <div class="bg-slate-800 border border-emerald-600/50 rounded-xl px-4 py-2 text-center">
+          <p class="text-xs text-slate-400 mb-0.5">Session Code</p>
+          <p id="session-badge" class="text-2xl font-bold tracking-widest text-emerald-400 font-mono">------</p>
+        </div>
+        <!-- Share link -->
+        <div class="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 max-w-xs">
+          <p class="text-xs text-slate-400 mb-1">Player Link</p>
+          <div class="flex items-center gap-2">
+            <span id="share-link" class="text-xs text-emerald-300/80 truncate flex-1 font-mono">—</span>
+            <button onclick="copyLink()" class="text-xs bg-emerald-700 hover:bg-emerald-600 px-2 py-1 rounded transition flex-shrink-0">Copy</button>
+          </div>
+        </div>
+        <!-- Live indicator -->
+        <div class="flex items-center gap-2 text-sm">
+          <div id="live-dot" class="live-dot w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
+          <span id="last-update" class="text-slate-400 text-xs">Waiting…</span>
+        </div>
+        <!-- Stats pills -->
+        <div class="flex gap-2 flex-wrap">
+          <div class="bg-slate-800 rounded-lg px-3 py-1.5 text-xs text-center border border-slate-700"><p class="text-slate-400">Players</p><p id="stat-players" class="font-bold text-white">0</p></div>
+          <div class="bg-slate-800 rounded-lg px-3 py-1.5 text-xs text-center border border-slate-700"><p class="text-slate-400">Finished</p><p id="stat-finished" class="font-bold text-emerald-400">0</p></div>
+          <div class="bg-slate-800 rounded-lg px-3 py-1.5 text-xs text-center border border-slate-700"><p class="text-slate-400">Hit Target</p><p id="stat-target" class="font-bold text-yellow-400">0</p></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Player Grid -->
+  <main class="flex-1 overflow-y-auto p-6">
+    <div class="max-w-screen-xl mx-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold text-slate-300">Live Player Progress</h2>
+        <span class="text-xs text-slate-500">Click a player card to see their year-by-year details</span>
+      </div>
+      <div id="player-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <!-- Player cards injected here -->
+        <div class="col-span-full text-center text-slate-500 py-16 text-sm" id="empty-state">
+          ⏳ Waiting for players to join…<br>
+          <span class="text-xs">Share the session code above with your participants</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Legend bar -->
+  <footer class="bg-slate-900/60 border-t border-slate-800 px-6 py-3 flex-shrink-0">
+    <div class="max-w-screen-xl mx-auto flex flex-wrap gap-4 text-xs text-slate-400">
+      <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-slate-700 inline-block"></span> Not started</span>
+      <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-blue-600 inline-block"></span> Playing</span>
+      <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-emerald-600 inline-block"></span> ✓ Target met (≤15,000t)</span>
+      <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-amber-600 inline-block"></span> Finished (no target)</span>
+      <span class="ml-auto text-slate-600">Auto-refreshes every 5 s</span>
+    </div>
+  </footer>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PLAYER DETAIL MODAL
+═══════════════════════════════════════════ -->
+<div id="detail-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur z-50 flex items-center justify-center p-4 overflow-y-auto">
+  <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-4xl my-4">
+    <div class="p-6 border-b border-slate-700 flex items-center justify-between">
+      <div>
+        <h2 id="modal-player-name" class="text-2xl font-bold text-emerald-400"></h2>
+        <p id="modal-player-status" class="text-sm text-slate-400"></p>
+      </div>
+      <button onclick="closeModal()" class="text-slate-400 hover:text-white text-2xl transition">✕</button>
+    </div>
+    <div class="p-6 overflow-y-auto max-h-[70vh]">
+
+      <!-- Summary row -->
+      <div id="modal-summary" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"></div>
+
+      <!-- Year table -->
+      <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">Year-by-Year Metrics</h3>
+      <div class="overflow-x-auto rounded-xl border border-slate-700 mb-6">
+        <table class="w-full text-sm min-w-[700px]">
+          <thead class="bg-slate-900/60">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs text-slate-400 font-semibold">Year</th>
+              <th class="px-4 py-3 text-right text-xs text-amber-400 font-semibold">Cost ($M)</th>
+              <th class="px-4 py-3 text-right text-xs text-rose-400 font-semibold">Carbon (t)</th>
+              <th class="px-4 py-3 text-right text-xs text-sky-400 font-semibold">Electricity (MkWh)</th>
+              <th class="px-4 py-3 text-right text-xs text-purple-400 font-semibold">Patient</th>
+              <th class="px-4 py-3 text-right text-xs text-blue-400 font-semibold">Employee</th>
+              <th class="px-4 py-3 text-right text-xs text-yellow-400 font-semibold">Rating</th>
+            </tr>
+          </thead>
+          <tbody id="modal-year-table" class="divide-y divide-slate-800"></tbody>
+        </table>
+      </div>
+
+      <!-- Initiatives per year -->
+      <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">Initiatives Chosen</h3>
+      <div id="modal-initiatives" class="space-y-2"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   CONFIG
+═══════════════════════════════════════════════════════════════ */
+let FIREBASE_DB_URL = '';
+let SESSION_CODE    = '';
+let GAME_FILE_NAME  = 'game.html'; // adjust if you rename the player file
+let pollTimer       = null;
+let currentPlayers  = {};
+let detailPlayerId  = null;
+
+/* ═══════════════════════════════════════════════════════════════
+   SETUP
+═══════════════════════════════════════════════════════════════ */
+function showSetupError(msg) {
+  const el = document.getElementById('setup-error');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+function validateSetup() {
+  const url  = document.getElementById('db-url-input').value.trim().replace(/\/$/, '');
+  const name = document.getElementById('moderator-name').value.trim();
+  document.getElementById('setup-error').classList.add('hidden');
+  if (!url || !url.startsWith('https://')) { showSetupError('Please enter a valid Firebase Realtime Database URL (starts with https://).'); return null; }
+  if (!name) { showSetupError('Please enter your name.'); return null; }
+  return { url, name };
+}
+
+function genCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+
+async function createSession() {
+  const v = validateSetup(); if (!v) return;
+  FIREBASE_DB_URL = v.url;
+
+  SESSION_CODE = genCode();
+  try {
+    const res = await fetch(`${FIREBASE_DB_URL}/sessions/${SESSION_CODE}/info.json`, {
+      method : 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify({ created: Date.now(), moderator: v.name, active: true })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+  } catch (e) {
+    showSetupError(`Could not connect to Firebase: ${e.message}. Check your database URL and that read/write rules are set to true.`);
+    return;
+  }
+  launchDashboard();
+}
+
+function showReconnectInput() {
+  document.getElementById('reconnect-row').classList.toggle('hidden');
+}
+
+async function reconnectSession() {
+  const v = validateSetup(); if (!v) return;
+  FIREBASE_DB_URL = v.url;
+  const code = document.getElementById('reconnect-code').value.toUpperCase().trim();
+  if (code.length < 4) { showSetupError('Enter a valid session code.'); return; }
+  try {
+    const res  = await fetch(`${FIREBASE_DB_URL}/sessions/${code}/info.json`);
+    const data = await res.json();
+    if (!data) { showSetupError('Session not found. Check the code.'); return; }
+    SESSION_CODE = code;
+    launchDashboard();
+  } catch(e) {
+    showSetupError('Cannot connect. Check URL and internet connection.');
+  }
+}
+
+function launchDashboard() {
+  document.getElementById('setup-panel').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+
+  const code = SESSION_CODE;
+  document.getElementById('session-badge').textContent = code;
+
+  // Build share link (same directory as this file)
+  const base = window.location.href.replace(/[^/]*$/, '');
+  const link = `${base}${GAME_FILE_NAME}?session=${code}`;
+  document.getElementById('share-link').textContent = link;
+  document.getElementById('share-link').title = link;
+
+  startPolling();
+}
+
+function copyLink() {
+  const text = document.getElementById('share-link').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   POLLING
+═══════════════════════════════════════════════════════════════ */
+function startPolling() {
+  fetchPlayers(); // immediate first load
+  pollTimer = setInterval(fetchPlayers, 5000);
+}
+
+async function fetchPlayers() {
+  try {
+    const res  = await fetch(`${FIREBASE_DB_URL}/sessions/${SESSION_CODE}/players.json`);
+    const data = await res.json();
+    currentPlayers = data || {};
+    renderPlayers(currentPlayers);
+    document.getElementById('last-update').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  } catch(e) {
+    document.getElementById('last-update').textContent = 'Connection error';
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RENDER PLAYER GRID
+═══════════════════════════════════════════════════════════════ */
+function renderPlayers(players) {
+  const ids    = Object.keys(players);
+  const empty  = document.getElementById('empty-state');
+  const grid   = document.getElementById('player-grid');
+
+  if (ids.length === 0) {
+    empty.classList.remove('hidden');
+    // remove old cards
+    Array.from(grid.querySelectorAll('.player-card')).forEach(c => c.remove());
+  } else {
+    empty.classList.add('hidden');
+  }
+
+  // Update stats
+  const finished = ids.filter(id => players[id].completed).length;
+  const target   = ids.filter(id => players[id].hitTarget).length;
+  document.getElementById('stat-players').textContent  = ids.length;
+  document.getElementById('stat-finished').textContent = finished;
+  document.getElementById('stat-target').textContent   = target;
+
+  ids.forEach(id => {
+    const p    = players[id];
+    let card   = document.getElementById('card-' + id);
+    if (!card) {
+      card = document.createElement('div');
+      card.id = 'card-' + id;
+      card.className = 'player-card cursor-pointer rounded-xl border-2 p-4 select-none';
+      card.onclick = () => openModal(id);
+      grid.appendChild(card);
+    }
+    refreshCard(card, p);
+  });
+
+  // If detail modal open for this player, refresh modal data too
+  if (detailPlayerId && currentPlayers[detailPlayerId]) {
+    renderModal(detailPlayerId, currentPlayers[detailPlayerId]);
+  }
+}
+
+function refreshCard(card, p) {
+  const year      = p.currentYear || 0;
+  const completed = p.completed   || false;
+  const hitTarget = p.hitTarget   || false;
+  const carbon    = p.latestCarbon != null ? p.latestCarbon : 30000;
+  const rating    = p.latestRating != null ? p.latestRating : 3;
+  const carbonPct = Math.max(0, Math.min(100, ((30000 - carbon) / 30000 * 100)));
+
+  // Border & bg based on status
+  let borderCls = 'border-slate-700 bg-slate-800/50';
+  let statusBadge = '';
+  if (completed && hitTarget) {
+    borderCls   = 'border-emerald-500 bg-emerald-900/20';
+    statusBadge = '<span class="text-xs font-bold text-emerald-400 bg-emerald-900/40 px-2 py-0.5 rounded-full">🎯 Target Met</span>';
+  } else if (completed) {
+    borderCls   = 'border-amber-500 bg-amber-900/20';
+    statusBadge = '<span class="text-xs font-bold text-amber-400 bg-amber-900/40 px-2 py-0.5 rounded-full">✓ Finished</span>';
+  } else if (year > 0) {
+    borderCls   = 'border-blue-600 bg-blue-900/10';
+    statusBadge = '<span class="text-xs font-bold text-blue-400 bg-blue-900/40 px-2 py-0.5 rounded-full">▶ Year ' + year + '/7</span>';
+  } else {
+    statusBadge = '<span class="text-xs text-slate-500">Not started</span>';
+  }
+
+  // Year pips
+  const pips = Array.from({ length: 7 }, (_, i) => {
+    let col = 'bg-slate-700';
+    if (i < year) col = (completed && hitTarget) ? 'bg-emerald-400' : (completed ? 'bg-amber-400' : 'bg-blue-400');
+    return `<span class="year-pip ${col}"></span>`;
+  }).join('');
+
+  // Carbon bar color
+  const barColor = carbonPct >= 50 ? '#10b981' : carbonPct >= 25 ? '#f59e0b' : '#ef4444';
+
+  card.className = `player-card cursor-pointer rounded-xl border-2 p-4 select-none ${borderCls}`;
+  card.innerHTML = `
+    <div class="flex items-start justify-between mb-3">
+      <div>
+        <p class="font-bold text-white truncate max-w-[160px]" title="${p.name || 'Unknown'}">${p.name || 'Unknown'}</p>
+        <div class="flex gap-0.5 mt-1">${pips}</div>
+      </div>
+      <div>${statusBadge}</div>
+    </div>
+    <div class="space-y-2 text-xs">
+      <div>
+        <div class="flex justify-between mb-1"><span class="text-slate-400">Carbon reduction</span><span class="font-bold text-white">${carbonPct.toFixed(1)}%</span></div>
+        <div class="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+          <div class="h-full rounded-full transition-all duration-700" style="width:${Math.min(100, carbonPct * 2)}%;background:${barColor}"></div>
+        </div>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-slate-400">Carbon</span>
+        <span class="font-semibold text-rose-400">${carbon.toLocaleString()}t</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-slate-400">Rating</span>
+        <span class="font-semibold text-yellow-400">${(rating || 3).toFixed(1)}/5</span>
+      </div>
+    </div>
+    <div class="mt-3 text-xs text-slate-500 text-right">Click for details →</div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PLAYER DETAIL MODAL
+═══════════════════════════════════════════════════════════════ */
+function openModal(playerId) {
+  detailPlayerId = playerId;
+  const p = currentPlayers[playerId];
+  if (!p) return;
+  renderModal(playerId, p);
+  document.getElementById('detail-modal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  detailPlayerId = null;
+  document.getElementById('detail-modal').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function renderModal(playerId, p) {
+  const year      = p.currentYear || 0;
+  const completed = p.completed || false;
+  const hitTarget = p.hitTarget || false;
+  const carbonRed = p.carbonReduction != null ? p.carbonReduction : 0;
+
+  document.getElementById('modal-player-name').textContent = p.name || 'Player';
+  let statusTxt = year === 0 ? 'Not started' : completed ? (hitTarget ? '🎯 Target achieved!' : '✓ Game completed') : `Currently on Year ${year}`;
+  document.getElementById('modal-player-status').textContent = statusTxt;
+
+  // Summary cards
+  const summaryEl = document.getElementById('modal-summary');
+  summaryEl.innerHTML = `
+    <div class="bg-slate-700/40 rounded-xl p-4 text-center border border-slate-600">
+      <p class="text-xs text-slate-400 mb-1">Years Completed</p>
+      <p class="text-2xl font-bold text-white">${year}/7</p>
+    </div>
+    <div class="bg-slate-700/40 rounded-xl p-4 text-center border border-slate-600">
+      <p class="text-xs text-slate-400 mb-1">Carbon Reduction</p>
+      <p class="text-2xl font-bold ${hitTarget ? 'text-emerald-400' : 'text-amber-400'}">${carbonRed.toFixed(1)}%</p>
+    </div>
+    <div class="bg-slate-700/40 rounded-xl p-4 text-center border border-slate-600">
+      <p class="text-xs text-slate-400 mb-1">Final Carbon</p>
+      <p class="text-2xl font-bold text-rose-400">${(p.latestCarbon || 30000).toLocaleString()}t</p>
+    </div>
+    <div class="bg-slate-700/40 rounded-xl p-4 text-center border border-slate-600">
+      <p class="text-xs text-slate-400 mb-1">Hospital Rating</p>
+      <p class="text-2xl font-bold text-yellow-400">${(p.latestRating || 3).toFixed(1)}/5</p>
+    </div>`;
+
+  // Year table
+  const tbody    = document.getElementById('modal-year-table');
+  const initDiv  = document.getElementById('modal-initiatives');
+  tbody.innerHTML = '';
+  initDiv.innerHTML = '';
+
+  // Baseline row
+  const baseRow = document.createElement('tr');
+  baseRow.className = 'bg-slate-900/40';
+  baseRow.innerHTML = `
+    <td class="px-4 py-3 font-semibold text-slate-400">Start</td>
+    <td class="px-4 py-3 text-right text-amber-400">$100.0M</td>
+    <td class="px-4 py-3 text-right text-rose-400">30,000</td>
+    <td class="px-4 py-3 text-right text-sky-400">40</td>
+    <td class="px-4 py-3 text-right text-purple-400">80</td>
+    <td class="px-4 py-3 text-right text-blue-400">80</td>
+    <td class="px-4 py-3 text-right text-yellow-400">3.0</td>`;
+  tbody.appendChild(baseRow);
+
+  for (let y = 1; y <= 7; y++) {
+    const yearData = p.years && p.years[y];
+    const row = document.createElement('tr');
+    row.className = y % 2 === 0 ? 'bg-slate-800/20' : '';
+    if (!yearData) {
+      row.innerHTML = `
+        <td class="px-4 py-3 font-semibold text-slate-500">Year ${y}</td>
+        <td class="px-4 py-3 text-right text-slate-600" colspan="6">—</td>`;
+    } else {
+      const m = yearData.metrics;
+      const isTarget = m.carbon <= 15000;
+      row.innerHTML = `
+        <td class="px-4 py-3 font-semibold text-white">Year ${y} ${y === year && completed ? '' : ''}</td>
+        <td class="px-4 py-3 text-right text-amber-400">$${(m.cost / 1e6).toFixed(1)}M</td>
+        <td class="px-4 py-3 text-right ${isTarget ? 'text-emerald-400 font-bold' : 'text-rose-400'}">${m.carbon.toLocaleString()}</td>
+        <td class="px-4 py-3 text-right text-sky-400">${(m.electricity / 1e6).toFixed(0)}</td>
+        <td class="px-4 py-3 text-right text-purple-400">${m.patient}</td>
+        <td class="px-4 py-3 text-right text-blue-400">${m.employee}</td>
+        <td class="px-4 py-3 text-right text-yellow-400">${m.rating.toFixed(1)}</td>`;
+    }
+    tbody.appendChild(row);
+
+    // Initiatives
+    if (yearData && yearData.initiatives && yearData.initiatives.length) {
+      const row2 = document.createElement('div');
+      row2.className = 'bg-slate-800/40 rounded-lg p-3 border border-slate-700/50';
+      const inits = yearData.initiatives.map(n => `<span class="inline-block bg-emerald-900/40 border border-emerald-700/40 rounded-md px-2 py-0.5 text-emerald-300 text-xs mr-1 mb-1">${n}</span>`).join('');
+      const trainBudget = yearData.trainingBudget || 0;
+      const events      = (yearData.events || []).join(', ') || 'None';
+      row2.innerHTML = `
+        <div class="flex items-start justify-between mb-2">
+          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Year ${y} Choices</p>
+          <span class="text-xs text-slate-500">Training: $${(trainBudget/1000).toFixed(0)}K | Events: ${events}</span>
+        </div>
+        <div>${inits}</div>`;
+      initDiv.appendChild(row2);
+    }
+  }
+}
+
+// Close modal on backdrop click
+document.getElementById('detail-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+</body>
+</html>
