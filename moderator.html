@@ -8,56 +8,54 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; }
-    body { font-family: 'Poppins', sans-serif; }
+    body { font-family: 'Poppins', sans-serif; font-size: 16px; }
     @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
     .live-dot { animation: pulse-dot 1.5s infinite; }
     @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
     .fade-in { animation: fadeIn 0.35s ease-out; }
     .player-card { transition: all 0.25s ease; }
     .player-card:hover { transform: translateY(-2px); }
-    .year-pip { width:10px; height:10px; border-radius:50%; display:inline-block; margin:0 1px; }
+    .year-pip { width:11px; height:11px; border-radius:50%; display:inline-block; margin:0 1.5px; }
     ::-webkit-scrollbar { width:6px; } ::-webkit-scrollbar-track { background:#1e293b; } ::-webkit-scrollbar-thumb { background:#334155; border-radius:4px; }
+    .tab-btn { transition: all 0.2s; border-bottom: 3px solid transparent; }
+    .tab-btn.active { border-bottom-color: #10b981; color: #fff; }
+    .rank-gold   { background: linear-gradient(135deg,#78350f22,#92400e11); border-color: #f59e0b55; }
+    .rank-silver { background: linear-gradient(135deg,#1e293b55,#33415555); border-color: #64748b55; }
+    .rank-bronze { background: linear-gradient(135deg,#431407aa,#7c2d1211); border-color: #b45309aa; }
+    .metric-pill { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:600; }
   </style>
 </head>
 <body class="bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 min-h-screen text-white">
 
 <!-- ═══════════════════════════════════════════
-     SETUP PANEL — shown before session exists
+     SETUP PANEL
 ═══════════════════════════════════════════ -->
 <div id="setup-panel" class="min-h-screen flex items-center justify-center p-6">
   <div class="fade-in bg-slate-800/60 backdrop-blur rounded-2xl p-10 max-w-lg w-full border border-emerald-700/30 shadow-2xl text-center">
     <div class="text-6xl mb-4">🏥</div>
     <h1 class="text-3xl font-bold bg-gradient-to-r from-emerald-300 to-teal-300 bg-clip-text text-transparent mb-1">Moderator Dashboard</h1>
-    <p class="text-slate-400 text-sm mb-8">Healthcare Emissions Action Lab — Live Session Control</p>
-
+    <p class="text-slate-400 mb-8">Healthcare Emissions Action Lab — Live Session Control</p>
     <div class="space-y-4 text-left mb-8">
       <div>
-        <label class="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Firebase Database URL</label>
+        <label class="block text-sm font-semibold uppercase tracking-wide text-slate-400 mb-1">Firebase Database URL</label>
         <input id="db-url-input" type="url" placeholder="https://YOUR-PROJECT-default-rtdb.firebaseio.com"
-          class="w-full bg-slate-700/80 border border-slate-600 rounded-lg px-4 py-3 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
-        <p class="text-xs text-slate-500 mt-1">Paste your Firebase Realtime Database URL here</p>
+          class="w-full bg-slate-700/80 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
+        <p class="text-sm text-slate-500 mt-1">Paste your Firebase Realtime Database URL here</p>
       </div>
       <div>
-        <label class="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Moderator Name</label>
+        <label class="block text-sm font-semibold uppercase tracking-wide text-slate-400 mb-1">Moderator Name</label>
         <input id="moderator-name" type="text" placeholder="e.g. Dr. Smith" maxlength="40"
-          class="w-full bg-slate-700/80 border border-slate-600 rounded-lg px-4 py-3 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
+          class="w-full bg-slate-700/80 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
       </div>
       <div id="setup-error" class="hidden text-rose-400 text-sm bg-rose-900/20 border border-rose-700/30 rounded-lg px-4 py-2"></div>
     </div>
-
     <div class="grid grid-cols-2 gap-3">
-      <button onclick="createSession()"
-        class="py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 rounded-xl font-bold text-white transition-all">
-        ＋ New Session
-      </button>
-      <button onclick="showReconnectInput()"
-        class="py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-semibold text-white transition-all">
-        ↩ Reconnect
-      </button>
+      <button onclick="createSession()" class="py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 rounded-xl font-bold text-white transition-all text-lg">＋ New Session</button>
+      <button onclick="showReconnectInput()" class="py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-semibold text-white transition-all text-lg">↩ Reconnect</button>
     </div>
     <div id="reconnect-row" class="hidden mt-3 flex gap-2">
-      <input id="reconnect-code" type="text" maxlength="6" placeholder="Session code" class="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white uppercase tracking-widest placeholder-slate-500 focus:outline-none focus:border-emerald-500">
-      <button onclick="reconnectSession()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg font-semibold transition">Go</button>
+      <input id="reconnect-code" type="text" maxlength="6" placeholder="Session code" class="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white uppercase tracking-widest placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-lg">
+      <button onclick="reconnectSession()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg font-semibold transition text-lg">Go</button>
     </div>
   </div>
 </div>
@@ -71,58 +69,118 @@
   <header class="bg-slate-900/80 backdrop-blur border-b border-emerald-700/30 px-6 py-4 flex-shrink-0">
     <div class="max-w-screen-xl mx-auto flex flex-wrap items-center justify-between gap-4">
       <div>
-        <h1 class="text-xl font-bold bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">🏥 Moderator Dashboard</h1>
-        <p class="text-slate-400 text-xs">Healthcare Emissions Action Lab</p>
+        <h1 class="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">🏥 Moderator Dashboard</h1>
+        <p class="text-slate-400 text-sm">Healthcare Emissions Action Lab</p>
       </div>
       <div class="flex items-center gap-4 flex-wrap">
-        <!-- Session code badge -->
+        <!-- Session code -->
         <div class="bg-slate-800 border border-emerald-600/50 rounded-xl px-4 py-2 text-center">
-          <p class="text-xs text-slate-400 mb-0.5">Session Code</p>
-          <p id="session-badge" class="text-2xl font-bold tracking-widest text-emerald-400 font-mono">------</p>
+          <p class="text-sm text-slate-400 mb-0.5">Session Code</p>
+          <p id="session-badge" class="text-3xl font-bold tracking-widest text-emerald-400 font-mono">------</p>
         </div>
         <!-- Share link -->
         <div class="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 max-w-xs">
-          <p class="text-xs text-slate-400 mb-1">Player Link</p>
+          <p class="text-sm text-slate-400 mb-1">Player Link</p>
           <div class="flex items-center gap-2">
-            <span id="share-link" class="text-xs text-emerald-300/80 truncate flex-1 font-mono">—</span>
-            <button onclick="copyLink()" class="text-xs bg-emerald-700 hover:bg-emerald-600 px-2 py-1 rounded transition flex-shrink-0">Copy</button>
+            <span id="share-link" class="text-sm text-emerald-300/80 truncate flex-1 font-mono">—</span>
+            <button onclick="copyLink()" class="text-sm bg-emerald-700 hover:bg-emerald-600 px-2 py-1 rounded transition flex-shrink-0 font-semibold">Copy</button>
           </div>
         </div>
         <!-- Live indicator -->
-        <div class="flex items-center gap-2 text-sm">
-          <div id="live-dot" class="live-dot w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
-          <span id="last-update" class="text-slate-400 text-xs">Waiting…</span>
+        <div class="flex items-center gap-2">
+          <div id="live-dot" class="live-dot w-3 h-3 rounded-full bg-emerald-400"></div>
+          <span id="last-update" class="text-slate-400 text-sm">Waiting…</span>
         </div>
         <!-- Stats pills -->
         <div class="flex gap-2 flex-wrap">
-          <div class="bg-slate-800 rounded-lg px-3 py-1.5 text-xs text-center border border-slate-700"><p class="text-slate-400">Players</p><p id="stat-players" class="font-bold text-white">0</p></div>
-          <div class="bg-slate-800 rounded-lg px-3 py-1.5 text-xs text-center border border-slate-700"><p class="text-slate-400">Finished</p><p id="stat-finished" class="font-bold text-emerald-400">0</p></div>
-          <div class="bg-slate-800 rounded-lg px-3 py-1.5 text-xs text-center border border-slate-700"><p class="text-slate-400">Hit Target</p><p id="stat-target" class="font-bold text-yellow-400">0</p></div>
+          <div class="bg-slate-800 rounded-lg px-4 py-2 text-center border border-slate-700">
+            <p class="text-sm text-slate-400">Players</p><p id="stat-players" class="text-xl font-bold text-white">0</p>
+          </div>
+          <div class="bg-slate-800 rounded-lg px-4 py-2 text-center border border-slate-700">
+            <p class="text-sm text-slate-400">Finished</p><p id="stat-finished" class="text-xl font-bold text-emerald-400">0</p>
+          </div>
+          <div class="bg-slate-800 rounded-lg px-4 py-2 text-center border border-slate-700">
+            <p class="text-sm text-slate-400">Hit Target</p><p id="stat-target" class="text-xl font-bold text-yellow-400">0</p>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- View tabs -->
+    <div class="max-w-screen-xl mx-auto mt-4 flex gap-6 border-b border-slate-800">
+      <button id="tab-grid-btn"    onclick="switchView('grid')"    class="tab-btn active pb-2 text-slate-300 font-semibold text-base">📊 Player Cards</button>
+      <button id="tab-ranking-btn" onclick="switchView('ranking')" class="tab-btn pb-2 text-slate-400 font-semibold text-base">🏆 Live Rankings</button>
+    </div>
   </header>
 
-  <!-- Player Grid -->
-  <main class="flex-1 overflow-y-auto p-6">
+  <!-- ── PLAYER GRID VIEW ── -->
+  <main id="view-grid" class="flex-1 overflow-y-auto p-6">
     <div class="max-w-screen-xl mx-auto">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-bold text-slate-300">Live Player Progress</h2>
-        <span class="text-xs text-slate-500">Click a player card to see their year-by-year details</span>
+        <p class="text-slate-300 font-semibold text-lg">Live Player Progress</p>
+        <span class="text-sm text-slate-500">Click any card to see year-by-year details</span>
       </div>
       <div id="player-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        <!-- Player cards injected here -->
-        <div class="col-span-full text-center text-slate-500 py-16 text-sm" id="empty-state">
-          ⏳ Waiting for players to join…<br>
-          <span class="text-xs">Share the session code above with your participants</span>
+        <div class="col-span-full text-center text-slate-500 py-16" id="empty-state">
+          <p class="text-2xl mb-2">⏳</p>
+          <p class="text-lg font-semibold">Waiting for players to join…</p>
+          <p class="text-sm mt-1">Share the session code above with your participants</p>
         </div>
       </div>
     </div>
   </main>
 
-  <!-- Legend bar -->
+  <!-- ── RANKINGS VIEW ── -->
+  <main id="view-ranking" class="hidden flex-1 overflow-y-auto p-6">
+    <div class="max-w-screen-xl mx-auto">
+      <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div>
+          <p class="text-white font-bold text-xl">🏆 Live Rankings</p>
+          <p class="text-slate-400 text-sm">Ranked by carbon reduction, then hospital rating. Updates every 5 s.</p>
+        </div>
+        <div class="flex gap-3 text-sm font-semibold">
+          <span class="text-yellow-400">🥇 1st</span>
+          <span class="text-slate-400">🥈 2nd</span>
+          <span class="text-amber-600">🥉 3rd</span>
+        </div>
+      </div>
+
+      <!-- Rankings table -->
+      <div class="bg-slate-900/60 rounded-2xl border border-slate-700 overflow-hidden">
+
+        <!-- Table header -->
+        <div class="grid grid-cols-[50px_1fr_120px_110px_110px_100px_100px_100px_110px] gap-0 bg-slate-800/80 border-b border-slate-700 px-4 py-3 text-sm font-bold text-slate-400 uppercase tracking-wide">
+          <div class="text-center">#</div>
+          <div>Hospital</div>
+          <div class="text-center text-rose-400">🌿 Carbon</div>
+          <div class="text-center text-rose-300">📉 Reduction</div>
+          <div class="text-center text-yellow-400">⭐ Rating</div>
+          <div class="text-center text-amber-400">💰 Cost</div>
+          <div class="text-center text-sky-400">⚡ Electricity</div>
+          <div class="text-center text-purple-400">😊 Patient</div>
+          <div class="text-center text-blue-400">👔 Employee</div>
+        </div>
+
+        <!-- Ranking rows injected here -->
+        <div id="ranking-body">
+          <div class="text-center text-slate-500 py-12 text-base">
+            ⏳ Waiting for players to complete years…
+          </div>
+        </div>
+      </div>
+
+      <!-- Ranking legend -->
+      <div class="mt-4 flex flex-wrap gap-4 text-sm text-slate-500">
+        <span>Priority 1: ↓ Carbon reduction (highest % wins)</span>
+        <span>Priority 2: ↑ Hospital rating (higher wins)</span>
+        <span>In-progress players ranked by current metrics</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer legend -->
   <footer class="bg-slate-900/60 border-t border-slate-800 px-6 py-3 flex-shrink-0">
-    <div class="max-w-screen-xl mx-auto flex flex-wrap gap-4 text-xs text-slate-400">
+    <div class="max-w-screen-xl mx-auto flex flex-wrap gap-4 text-sm text-slate-400">
       <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-slate-700 inline-block"></span> Not started</span>
       <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-blue-600 inline-block"></span> Playing</span>
       <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-emerald-600 inline-block"></span> ✓ Target met (≤15,000t)</span>
@@ -136,59 +194,59 @@
      PLAYER DETAIL MODAL
 ═══════════════════════════════════════════ -->
 <div id="detail-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur z-50 flex items-center justify-center p-4 overflow-y-auto">
-  <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-4xl my-4">
+  <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-5xl my-4">
     <div class="p-6 border-b border-slate-700 flex items-center justify-between">
       <div>
         <h2 id="modal-player-name" class="text-2xl font-bold text-emerald-400"></h2>
-        <p id="modal-player-status" class="text-sm text-slate-400"></p>
+        <p id="modal-player-status" class="text-base text-slate-400"></p>
       </div>
-      <button onclick="closeModal()" class="text-slate-400 hover:text-white text-2xl transition">✕</button>
+      <button onclick="closeModal()" class="text-slate-400 hover:text-white text-3xl transition">✕</button>
     </div>
-    <div class="p-6 overflow-y-auto max-h-[70vh]">
+    <div class="p-6 overflow-y-auto max-h-[75vh]">
 
-      <!-- Summary row -->
+      <!-- Summary -->
       <div id="modal-summary" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"></div>
 
+      <!-- All 6 metrics summary bar -->
+      <div id="modal-metrics-bar" class="flex flex-wrap gap-2 mb-6 p-4 bg-slate-800/40 rounded-xl border border-slate-700"></div>
+
       <!-- Year table -->
-      <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">Year-by-Year Metrics</h3>
+      <h3 class="text-base font-bold text-slate-400 uppercase tracking-wide mb-3">Year-by-Year Metrics</h3>
       <div class="overflow-x-auto rounded-xl border border-slate-700 mb-6">
-        <table class="w-full text-sm min-w-[700px]">
+        <table class="w-full min-w-[750px]">
           <thead class="bg-slate-900/60">
             <tr>
-              <th class="px-4 py-3 text-left text-xs text-slate-400 font-semibold">Year</th>
-              <th class="px-4 py-3 text-right text-xs text-amber-400 font-semibold">Cost ($M)</th>
-              <th class="px-4 py-3 text-right text-xs text-rose-400 font-semibold">Carbon (t)</th>
-              <th class="px-4 py-3 text-right text-xs text-sky-400 font-semibold">Electricity (MkWh)</th>
-              <th class="px-4 py-3 text-right text-xs text-purple-400 font-semibold">Patient</th>
-              <th class="px-4 py-3 text-right text-xs text-blue-400 font-semibold">Employee</th>
-              <th class="px-4 py-3 text-right text-xs text-yellow-400 font-semibold">Rating</th>
+              <th class="px-4 py-3 text-left text-sm text-slate-400 font-semibold">Year</th>
+              <th class="px-4 py-3 text-right text-sm text-amber-400 font-semibold">Cost ($M)</th>
+              <th class="px-4 py-3 text-right text-sm text-rose-400 font-semibold">Carbon (t)</th>
+              <th class="px-4 py-3 text-right text-sm text-sky-400 font-semibold">Electricity (MkWh)</th>
+              <th class="px-4 py-3 text-right text-sm text-purple-400 font-semibold">Patient</th>
+              <th class="px-4 py-3 text-right text-sm text-blue-400 font-semibold">Employee</th>
+              <th class="px-4 py-3 text-right text-sm text-yellow-400 font-semibold">Rating</th>
             </tr>
           </thead>
-          <tbody id="modal-year-table" class="divide-y divide-slate-800"></tbody>
+          <tbody id="modal-year-table" class="divide-y divide-slate-800 text-base"></tbody>
         </table>
       </div>
 
-      <!-- Initiatives per year -->
-      <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">Initiatives Chosen</h3>
+      <!-- Initiatives -->
+      <h3 class="text-base font-bold text-slate-400 uppercase tracking-wide mb-3">Initiatives Chosen</h3>
       <div id="modal-initiatives" class="space-y-2"></div>
     </div>
   </div>
 </div>
 
 <script>
-/* ═══════════════════════════════════════════════════════════════
-   CONFIG
-═══════════════════════════════════════════════════════════════ */
+/* ── CONFIG ── */
 let FIREBASE_DB_URL = '';
 let SESSION_CODE    = '';
-let GAME_FILE_NAME  = 'game.html'; // adjust if you rename the player file
+let GAME_FILE_NAME  = 'game.html';
 let pollTimer       = null;
 let currentPlayers  = {};
 let detailPlayerId  = null;
+let currentView     = 'grid';
 
-/* ═══════════════════════════════════════════════════════════════
-   SETUP
-═══════════════════════════════════════════════════════════════ */
+/* ── SETUP ── */
 function showSetupError(msg) {
   const el = document.getElementById('setup-error');
   el.textContent = msg;
@@ -212,13 +270,11 @@ function genCode() {
 async function createSession() {
   const v = validateSetup(); if (!v) return;
   FIREBASE_DB_URL = v.url;
-
   SESSION_CODE = genCode();
   try {
     const res = await fetch(`${FIREBASE_DB_URL}/sessions/${SESSION_CODE}/info.json`, {
-      method : 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body   : JSON.stringify({ created: Date.now(), moderator: v.name, active: true })
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ created: Date.now(), moderator: v.name, active: true })
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
   } catch (e) {
@@ -243,24 +299,17 @@ async function reconnectSession() {
     if (!data) { showSetupError('Session not found. Check the code.'); return; }
     SESSION_CODE = code;
     launchDashboard();
-  } catch(e) {
-    showSetupError('Cannot connect. Check URL and internet connection.');
-  }
+  } catch(e) { showSetupError('Cannot connect. Check URL and internet connection.'); }
 }
 
 function launchDashboard() {
   document.getElementById('setup-panel').classList.add('hidden');
   document.getElementById('dashboard').classList.remove('hidden');
-
-  const code = SESSION_CODE;
-  document.getElementById('session-badge').textContent = code;
-
-  // Build share link (same directory as this file)
+  document.getElementById('session-badge').textContent = SESSION_CODE;
   const base = window.location.href.replace(/[^/]*$/, '');
-  const link = `${base}${GAME_FILE_NAME}?session=${code}`;
+  const link = `${base}${GAME_FILE_NAME}?session=${SESSION_CODE}`;
   document.getElementById('share-link').textContent = link;
   document.getElementById('share-link').title = link;
-
   startPolling();
 }
 
@@ -273,11 +322,22 @@ function copyLink() {
   });
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   POLLING
-═══════════════════════════════════════════════════════════════ */
+/* ── VIEW SWITCHING ── */
+function switchView(view) {
+  currentView = view;
+  document.getElementById('view-grid').classList.toggle('hidden', view !== 'grid');
+  document.getElementById('view-ranking').classList.toggle('hidden', view !== 'ranking');
+  document.getElementById('tab-grid-btn').classList.toggle('active', view === 'grid');
+  document.getElementById('tab-ranking-btn').classList.toggle('active', view === 'ranking');
+  document.getElementById('tab-grid-btn').classList.toggle('text-slate-300', view === 'grid');
+  document.getElementById('tab-grid-btn').classList.toggle('text-slate-500', view !== 'grid');
+  document.getElementById('tab-ranking-btn').classList.toggle('text-slate-300', view === 'ranking');
+  document.getElementById('tab-ranking-btn').classList.toggle('text-slate-500', view !== 'ranking');
+}
+
+/* ── POLLING ── */
 function startPolling() {
-  fetchPlayers(); // immediate first load
+  fetchPlayers();
   pollTimer = setInterval(fetchPlayers, 5000);
 }
 
@@ -287,29 +347,20 @@ async function fetchPlayers() {
     const data = await res.json();
     currentPlayers = data || {};
     renderPlayers(currentPlayers);
+    renderRankings(currentPlayers);
     document.getElementById('last-update').textContent = 'Updated ' + new Date().toLocaleTimeString();
   } catch(e) {
     document.getElementById('last-update').textContent = 'Connection error';
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   RENDER PLAYER GRID
-═══════════════════════════════════════════════════════════════ */
+/* ── PLAYER GRID ── */
 function renderPlayers(players) {
-  const ids    = Object.keys(players);
-  const empty  = document.getElementById('empty-state');
-  const grid   = document.getElementById('player-grid');
+  const ids   = Object.keys(players);
+  const empty = document.getElementById('empty-state');
+  const grid  = document.getElementById('player-grid');
+  empty.classList.toggle('hidden', ids.length > 0);
 
-  if (ids.length === 0) {
-    empty.classList.remove('hidden');
-    // remove old cards
-    Array.from(grid.querySelectorAll('.player-card')).forEach(c => c.remove());
-  } else {
-    empty.classList.add('hidden');
-  }
-
-  // Update stats
   const finished = ids.filter(id => players[id].completed).length;
   const target   = ids.filter(id => players[id].hitTarget).length;
   document.getElementById('stat-players').textContent  = ids.length;
@@ -317,8 +368,8 @@ function renderPlayers(players) {
   document.getElementById('stat-target').textContent   = target;
 
   ids.forEach(id => {
-    const p    = players[id];
-    let card   = document.getElementById('card-' + id);
+    const p = players[id];
+    let card = document.getElementById('card-' + id);
     if (!card) {
       card = document.createElement('div');
       card.id = 'card-' + id;
@@ -329,7 +380,6 @@ function renderPlayers(players) {
     refreshCard(card, p);
   });
 
-  // If detail modal open for this player, refresh modal data too
   if (detailPlayerId && currentPlayers[detailPlayerId]) {
     renderModal(detailPlayerId, currentPlayers[detailPlayerId]);
   }
@@ -339,67 +389,155 @@ function refreshCard(card, p) {
   const year      = p.currentYear || 0;
   const completed = p.completed   || false;
   const hitTarget = p.hitTarget   || false;
-  const carbon    = p.latestCarbon != null ? p.latestCarbon : 30000;
-  const rating    = p.latestRating != null ? p.latestRating : 3;
+  const carbon    = p.latestCarbon  != null ? p.latestCarbon  : 30000;
+  const rating    = p.latestRating  != null ? p.latestRating  : 3;
   const carbonPct = Math.max(0, Math.min(100, ((30000 - carbon) / 30000 * 100)));
+  const lastYear  = p.years && p.years[year];
+  const cost      = lastYear ? (lastYear.metrics.cost / 1e6).toFixed(1) : '100.0';
+  const elec      = lastYear ? (lastYear.metrics.electricity / 1e6).toFixed(0) : '40';
+  const patient   = lastYear ? lastYear.metrics.patient : 80;
+  const employee  = lastYear ? lastYear.metrics.employee : 80;
 
-  // Border & bg based on status
   let borderCls = 'border-slate-700 bg-slate-800/50';
   let statusBadge = '';
-  if (completed && hitTarget) {
-    borderCls   = 'border-emerald-500 bg-emerald-900/20';
-    statusBadge = '<span class="text-xs font-bold text-emerald-400 bg-emerald-900/40 px-2 py-0.5 rounded-full">🎯 Target Met</span>';
-  } else if (completed) {
-    borderCls   = 'border-amber-500 bg-amber-900/20';
-    statusBadge = '<span class="text-xs font-bold text-amber-400 bg-amber-900/40 px-2 py-0.5 rounded-full">✓ Finished</span>';
-  } else if (year > 0) {
-    borderCls   = 'border-blue-600 bg-blue-900/10';
-    statusBadge = '<span class="text-xs font-bold text-blue-400 bg-blue-900/40 px-2 py-0.5 rounded-full">▶ Year ' + year + '/7</span>';
-  } else {
-    statusBadge = '<span class="text-xs text-slate-500">Not started</span>';
-  }
+  if (completed && hitTarget)   { borderCls = 'border-emerald-500 bg-emerald-900/20'; statusBadge = '<span class="text-sm font-bold text-emerald-400 bg-emerald-900/40 px-2 py-0.5 rounded-full">🎯 Target Met</span>'; }
+  else if (completed)           { borderCls = 'border-amber-500 bg-amber-900/20';     statusBadge = '<span class="text-sm font-bold text-amber-400 bg-amber-900/40 px-2 py-0.5 rounded-full">✓ Finished</span>'; }
+  else if (year > 0)            { borderCls = 'border-blue-600 bg-blue-900/10';       statusBadge = `<span class="text-sm font-bold text-blue-400 bg-blue-900/40 px-2 py-0.5 rounded-full">▶ Y${year}/7</span>`; }
+  else                          { statusBadge = '<span class="text-sm text-slate-500">Not started</span>'; }
 
-  // Year pips
   const pips = Array.from({ length: 7 }, (_, i) => {
     let col = 'bg-slate-700';
     if (i < year) col = (completed && hitTarget) ? 'bg-emerald-400' : (completed ? 'bg-amber-400' : 'bg-blue-400');
     return `<span class="year-pip ${col}"></span>`;
   }).join('');
 
-  // Carbon bar color
   const barColor = carbonPct >= 50 ? '#10b981' : carbonPct >= 25 ? '#f59e0b' : '#ef4444';
 
   card.className = `player-card cursor-pointer rounded-xl border-2 p-4 select-none ${borderCls}`;
   card.innerHTML = `
     <div class="flex items-start justify-between mb-3">
-      <div>
-        <p class="font-bold text-white truncate max-w-[160px]" title="${p.name || 'Unknown'}">${p.name || 'Unknown'}</p>
+      <div class="min-w-0 flex-1">
+        <p class="font-bold text-white text-base truncate" title="${p.name||''}">${p.name||'Unknown'}</p>
         <div class="flex gap-0.5 mt-1">${pips}</div>
       </div>
-      <div>${statusBadge}</div>
+      <div class="ml-2 flex-shrink-0">${statusBadge}</div>
     </div>
-    <div class="space-y-2 text-xs">
+    <div class="space-y-2 mb-3">
       <div>
-        <div class="flex justify-between mb-1"><span class="text-slate-400">Carbon reduction</span><span class="font-bold text-white">${carbonPct.toFixed(1)}%</span></div>
-        <div class="h-1.5 bg-slate-700 rounded-full overflow-hidden">
-          <div class="h-full rounded-full transition-all duration-700" style="width:${Math.min(100, carbonPct * 2)}%;background:${barColor}"></div>
+        <div class="flex justify-between mb-1 text-sm"><span class="text-slate-400">Carbon reduction</span><span class="font-bold text-white">${carbonPct.toFixed(1)}%</span></div>
+        <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
+          <div class="h-full rounded-full transition-all duration-700" style="width:${Math.min(100,carbonPct*2)}%;background:${barColor}"></div>
         </div>
       </div>
-      <div class="flex justify-between">
-        <span class="text-slate-400">Carbon</span>
-        <span class="font-semibold text-rose-400">${carbon.toLocaleString()}t</span>
-      </div>
-      <div class="flex justify-between">
-        <span class="text-slate-400">Rating</span>
-        <span class="font-semibold text-yellow-400">${(rating || 3).toFixed(1)}/5</span>
+      <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
+        <div class="flex justify-between"><span class="text-slate-400">Carbon</span><span class="font-semibold text-rose-400">${carbon.toLocaleString()}t</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Rating</span><span class="font-semibold text-yellow-400">${(rating||3).toFixed(1)}/5</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Cost</span><span class="font-semibold text-amber-400">$${cost}M</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Elec.</span><span class="font-semibold text-sky-400">${elec}M kWh</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Patient</span><span class="font-semibold text-purple-400">${patient}</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Employee</span><span class="font-semibold text-blue-400">${employee}</span></div>
       </div>
     </div>
-    <div class="mt-3 text-xs text-slate-500 text-right">Click for details →</div>`;
+    <div class="text-xs text-slate-500 text-right">Click for details →</div>`;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   PLAYER DETAIL MODAL
-═══════════════════════════════════════════════════════════════ */
+/* ── RANKINGS ── */
+function renderRankings(players) {
+  const ids = Object.keys(players);
+  const body = document.getElementById('ranking-body');
+
+  if (ids.length === 0) {
+    body.innerHTML = '<div class="text-center text-slate-500 py-12 text-base">⏳ Waiting for players to join…</div>';
+    return;
+  }
+
+  // Build ranked list — sort by carbon reduction DESC, then hospital rating DESC
+  const ranked = ids.map(id => {
+    const p = players[id];
+    const year = p.currentYear || 0;
+    const lastYear = p.years && p.years[year];
+    const carbon    = p.latestCarbon  != null ? p.latestCarbon  : 30000;
+    const rating    = p.latestRating  != null ? p.latestRating  : 3;
+    const carbonPct = ((30000 - carbon) / 30000 * 100);
+    const cost      = lastYear ? lastYear.metrics.cost      : 100000000;
+    const elec      = lastYear ? lastYear.metrics.electricity : 40000000;
+    const patient   = lastYear ? lastYear.metrics.patient   : 80;
+    const employee  = lastYear ? lastYear.metrics.employee  : 80;
+    return { id, p, carbon, carbonPct, rating, cost, elec, patient, employee, year };
+  }).sort((a, b) => {
+    // Primary: carbon reduction (more is better)
+    if (Math.abs(b.carbonPct - a.carbonPct) > 0.05) return b.carbonPct - a.carbonPct;
+    // Secondary: hospital rating (higher is better)
+    if (Math.abs(b.rating - a.rating) > 0.01) return b.rating - a.rating;
+    // Tertiary: patient satisfaction
+    if (b.patient !== a.patient) return b.patient - a.patient;
+    // Quaternary: employee engagement
+    return b.employee - a.employee;
+  });
+
+  body.innerHTML = '';
+
+  ranked.forEach((r, i) => {
+    const rank = i + 1;
+    const p = r.p;
+    const completed = p.completed || false;
+    const hitTarget = p.hitTarget || false;
+
+    // Medal
+    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}`;
+    const rankCls = rank === 1 ? 'rank-gold' : rank === 2 ? 'rank-silver' : rank === 3 ? 'rank-bronze' : '';
+
+    // Status badge
+    let statusEl = '';
+    if (completed && hitTarget)   statusEl = '<span class="text-xs font-bold text-emerald-400 bg-emerald-900/40 px-2 py-0.5 rounded-full ml-2">🎯 Target</span>';
+    else if (completed)           statusEl = '<span class="text-xs font-bold text-amber-400 bg-amber-900/40 px-2 py-0.5 rounded-full ml-2">✓ Done</span>';
+    else if (r.year > 0)          statusEl = `<span class="text-xs font-bold text-blue-400 bg-blue-900/40 px-2 py-0.5 rounded-full ml-2">Y${r.year}/7</span>`;
+
+    // Carbon bar
+    const pct = Math.max(0, Math.min(100, r.carbonPct));
+    const barColor = pct >= 50 ? '#10b981' : pct >= 25 ? '#f59e0b' : '#ef4444';
+
+    // Change indicators (arrows)
+    const row = document.createElement('div');
+    row.className = `grid grid-cols-[50px_1fr_120px_110px_110px_100px_100px_100px_110px] gap-0 px-4 py-3 border-b border-slate-800/60 cursor-pointer hover:bg-slate-800/40 transition ${rankCls}`;
+    row.onclick = () => openModal(r.id);
+    row.innerHTML = `
+      <div class="flex items-center justify-center text-2xl font-bold">${medal}</div>
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="min-w-0">
+          <p class="font-bold text-white text-base truncate">${p.name || 'Unknown'}</p>
+          <div class="flex items-center mt-0.5">${statusEl}</div>
+        </div>
+      </div>
+      <div class="flex flex-col items-center justify-center">
+        <p class="font-bold text-rose-400 text-base">${r.carbon.toLocaleString()}t</p>
+        <div class="w-16 h-1.5 bg-slate-700 rounded-full mt-1 overflow-hidden">
+          <div class="h-full rounded-full" style="width:${Math.min(100,pct*2)}%;background:${barColor}"></div>
+        </div>
+      </div>
+      <div class="flex items-center justify-center">
+        <span class="font-bold text-base ${pct >= 50 ? 'text-emerald-400' : pct >= 25 ? 'text-amber-400' : 'text-rose-400'}">${pct.toFixed(1)}%</span>
+      </div>
+      <div class="flex items-center justify-center">
+        <span class="font-bold text-yellow-400 text-base">${(r.rating||3).toFixed(1)}/5</span>
+      </div>
+      <div class="flex items-center justify-center">
+        <span class="text-amber-400 text-sm font-semibold">$${(r.cost/1e6).toFixed(1)}M</span>
+      </div>
+      <div class="flex items-center justify-center">
+        <span class="text-sky-400 text-sm font-semibold">${(r.elec/1e6).toFixed(0)}M</span>
+      </div>
+      <div class="flex items-center justify-center">
+        <span class="text-purple-400 text-sm font-semibold">${r.patient}</span>
+      </div>
+      <div class="flex items-center justify-center">
+        <span class="text-blue-400 text-sm font-semibold">${r.employee}</span>
+      </div>`;
+    body.appendChild(row);
+  });
+}
+
+/* ── PLAYER DETAIL MODAL ── */
 function openModal(playerId) {
   detailPlayerId = playerId;
   const p = currentPlayers[playerId];
@@ -417,45 +555,61 @@ function closeModal() {
 
 function renderModal(playerId, p) {
   const year      = p.currentYear || 0;
-  const completed = p.completed || false;
-  const hitTarget = p.hitTarget || false;
+  const completed = p.completed   || false;
+  const hitTarget = p.hitTarget   || false;
   const carbonRed = p.carbonReduction != null ? p.carbonReduction : 0;
+  const lastYear  = p.years && p.years[year];
 
   document.getElementById('modal-player-name').textContent = p.name || 'Player';
   let statusTxt = year === 0 ? 'Not started' : completed ? (hitTarget ? '🎯 Target achieved!' : '✓ Game completed') : `Currently on Year ${year}`;
   document.getElementById('modal-player-status').textContent = statusTxt;
 
-  // Summary cards
+  // Summary cards (4)
   const summaryEl = document.getElementById('modal-summary');
   summaryEl.innerHTML = `
     <div class="bg-slate-700/40 rounded-xl p-4 text-center border border-slate-600">
-      <p class="text-xs text-slate-400 mb-1">Years Completed</p>
-      <p class="text-2xl font-bold text-white">${year}/7</p>
+      <p class="text-sm text-slate-400 mb-1">Years Completed</p>
+      <p class="text-3xl font-bold text-white">${year}/7</p>
     </div>
     <div class="bg-slate-700/40 rounded-xl p-4 text-center border border-slate-600">
-      <p class="text-xs text-slate-400 mb-1">Carbon Reduction</p>
-      <p class="text-2xl font-bold ${hitTarget ? 'text-emerald-400' : 'text-amber-400'}">${carbonRed.toFixed(1)}%</p>
+      <p class="text-sm text-slate-400 mb-1">Carbon Reduction</p>
+      <p class="text-3xl font-bold ${hitTarget ? 'text-emerald-400' : 'text-amber-400'}">${carbonRed.toFixed(1)}%</p>
     </div>
     <div class="bg-slate-700/40 rounded-xl p-4 text-center border border-slate-600">
-      <p class="text-xs text-slate-400 mb-1">Final Carbon</p>
-      <p class="text-2xl font-bold text-rose-400">${(p.latestCarbon || 30000).toLocaleString()}t</p>
+      <p class="text-sm text-slate-400 mb-1">Final Carbon</p>
+      <p class="text-3xl font-bold text-rose-400">${(p.latestCarbon || 30000).toLocaleString()}t</p>
     </div>
     <div class="bg-slate-700/40 rounded-xl p-4 text-center border border-slate-600">
-      <p class="text-xs text-slate-400 mb-1">Hospital Rating</p>
-      <p class="text-2xl font-bold text-yellow-400">${(p.latestRating || 3).toFixed(1)}/5</p>
+      <p class="text-sm text-slate-400 mb-1">Hospital Rating</p>
+      <p class="text-3xl font-bold text-yellow-400">${(p.latestRating || 3).toFixed(1)}/5</p>
     </div>`;
 
+  // All 6 metrics pill bar
+  const metricsBar = document.getElementById('modal-metrics-bar');
+  if (lastYear) {
+    const m = lastYear.metrics;
+    metricsBar.innerHTML = `
+      <span class="metric-pill bg-amber-900/30 text-amber-400 border border-amber-700/30">💰 $${(m.cost/1e6).toFixed(1)}M</span>
+      <span class="metric-pill bg-rose-900/30 text-rose-400 border border-rose-700/30">🌿 ${m.carbon.toLocaleString()}t CO₂</span>
+      <span class="metric-pill bg-sky-900/30 text-sky-400 border border-sky-700/30">⚡ ${(m.electricity/1e6).toFixed(0)}M kWh</span>
+      <span class="metric-pill bg-purple-900/30 text-purple-400 border border-purple-700/30">😊 Patient ${m.patient}</span>
+      <span class="metric-pill bg-blue-900/30 text-blue-400 border border-blue-700/30">👔 Employee ${m.employee}</span>
+      <span class="metric-pill bg-yellow-900/30 text-yellow-400 border border-yellow-700/30">⭐ Rating ${m.rating.toFixed(1)}/5</span>`;
+  } else {
+    metricsBar.innerHTML = '<span class="text-slate-500 text-sm">No year data yet</span>';
+  }
+
   // Year table
-  const tbody    = document.getElementById('modal-year-table');
-  const initDiv  = document.getElementById('modal-initiatives');
+  const tbody   = document.getElementById('modal-year-table');
+  const initDiv = document.getElementById('modal-initiatives');
   tbody.innerHTML = '';
   initDiv.innerHTML = '';
 
-  // Baseline row
+  // Baseline
   const baseRow = document.createElement('tr');
   baseRow.className = 'bg-slate-900/40';
   baseRow.innerHTML = `
-    <td class="px-4 py-3 font-semibold text-slate-400">Start</td>
+    <td class="px-4 py-3 font-semibold text-slate-400 text-base">Start</td>
     <td class="px-4 py-3 text-right text-amber-400">$100.0M</td>
     <td class="px-4 py-3 text-right text-rose-400">30,000</td>
     <td class="px-4 py-3 text-right text-sky-400">40</td>
@@ -469,34 +623,31 @@ function renderModal(playerId, p) {
     const row = document.createElement('tr');
     row.className = y % 2 === 0 ? 'bg-slate-800/20' : '';
     if (!yearData) {
-      row.innerHTML = `
-        <td class="px-4 py-3 font-semibold text-slate-500">Year ${y}</td>
-        <td class="px-4 py-3 text-right text-slate-600" colspan="6">—</td>`;
+      row.innerHTML = `<td class="px-4 py-3 font-semibold text-slate-500 text-base">Year ${y}</td><td class="px-4 py-3 text-right text-slate-600" colspan="6">—</td>`;
     } else {
       const m = yearData.metrics;
       const isTarget = m.carbon <= 15000;
       row.innerHTML = `
-        <td class="px-4 py-3 font-semibold text-white">Year ${y} ${y === year && completed ? '' : ''}</td>
-        <td class="px-4 py-3 text-right text-amber-400">$${(m.cost / 1e6).toFixed(1)}M</td>
+        <td class="px-4 py-3 font-semibold text-white text-base">Year ${y}</td>
+        <td class="px-4 py-3 text-right text-amber-400">$${(m.cost/1e6).toFixed(1)}M</td>
         <td class="px-4 py-3 text-right ${isTarget ? 'text-emerald-400 font-bold' : 'text-rose-400'}">${m.carbon.toLocaleString()}</td>
-        <td class="px-4 py-3 text-right text-sky-400">${(m.electricity / 1e6).toFixed(0)}</td>
+        <td class="px-4 py-3 text-right text-sky-400">${(m.electricity/1e6).toFixed(0)}</td>
         <td class="px-4 py-3 text-right text-purple-400">${m.patient}</td>
         <td class="px-4 py-3 text-right text-blue-400">${m.employee}</td>
         <td class="px-4 py-3 text-right text-yellow-400">${m.rating.toFixed(1)}</td>`;
     }
     tbody.appendChild(row);
 
-    // Initiatives
     if (yearData && yearData.initiatives && yearData.initiatives.length) {
       const row2 = document.createElement('div');
-      row2.className = 'bg-slate-800/40 rounded-lg p-3 border border-slate-700/50';
-      const inits = yearData.initiatives.map(n => `<span class="inline-block bg-emerald-900/40 border border-emerald-700/40 rounded-md px-2 py-0.5 text-emerald-300 text-xs mr-1 mb-1">${n}</span>`).join('');
+      row2.className = 'bg-slate-800/40 rounded-lg p-4 border border-slate-700/50';
+      const inits = yearData.initiatives.map(n => `<span class="inline-block bg-emerald-900/40 border border-emerald-700/40 rounded-md px-2 py-1 text-emerald-300 text-sm mr-1 mb-1">${n}</span>`).join('');
       const trainBudget = yearData.trainingBudget || 0;
-      const events      = (yearData.events || []).join(', ') || 'None';
+      const events = (yearData.events || []).join(', ') || 'None';
       row2.innerHTML = `
         <div class="flex items-start justify-between mb-2">
-          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Year ${y} Choices</p>
-          <span class="text-xs text-slate-500">Training: $${(trainBudget/1000).toFixed(0)}K | Events: ${events}</span>
+          <p class="text-sm font-bold text-slate-400 uppercase tracking-wide">Year ${y} Choices</p>
+          <span class="text-sm text-slate-500">Training: $${(trainBudget/1000).toFixed(0)}K &nbsp;|&nbsp; Events: ${events}</span>
         </div>
         <div>${inits}</div>`;
       initDiv.appendChild(row2);
@@ -504,7 +655,6 @@ function renderModal(playerId, p) {
   }
 }
 
-// Close modal on backdrop click
 document.getElementById('detail-modal').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
