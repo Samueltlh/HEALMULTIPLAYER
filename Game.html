@@ -136,10 +136,14 @@
 
           <!-- Counter + hint -->
           <div class="flex items-center justify-between mb-4">
-            <p class="text-slate-300">Browse each category and pick <strong class="text-white">3 initiatives</strong> total</p>
+            <p class="text-slate-300" id="pick-hint">Browse each category and pick <strong class="text-white">3 initiatives</strong> total</p>
+            <div id="bonus-banner" class="hidden mt-2 px-4 py-2 bg-gradient-to-r from-yellow-900/60 to-amber-900/40 border border-yellow-500/50 rounded-xl text-sm text-yellow-300 flex items-center gap-2">
+              <span class="text-lg">⭐</span>
+              <span><strong>Leadership Bonus Unlocked!</strong> Both Sustainability Manager &amp; Board Involvement active — you may select <strong>4 initiatives</strong> this year.</span>
+            </div>
             <div class="bg-emerald-900/40 border border-emerald-600/40 rounded-xl px-4 py-2 text-center min-w-[90px]">
               <p class="text-xs text-slate-400">Selected</p>
-              <p class="text-2xl font-bold text-emerald-400"><span id="selection-count">0</span><span class="text-slate-500 text-base">/3</span></p>
+              <p class="text-2xl font-bold text-emerald-400"><span id="selection-count">0</span><span class="text-slate-500 text-base" id="max-select-label">/3</span></p>
             </div>
           </div>
 
@@ -229,7 +233,7 @@
 
 <script>
 /* ── FIREBASE CONFIG ── replace with your database URL ── */
-const FIREBASE_DB_URL = 'https://heal-moderator-dashboard-default-rtdb.firebaseio.com';
+const FIREBASE_DB_URL = 'https://YOUR-PROJECT-default-rtdb.firebaseio.com';
 
 let _sessionCode='',_playerId='',_playerName='';
 function _genId(){return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
@@ -533,6 +537,18 @@ function loadYear(year){
   document.getElementById('selection-count').textContent='0';
   document.getElementById('training-slider').value=0;
   document.getElementById('year-label').textContent=`Year ${year}`;
+  // Update dynamic UI for bonus
+  const bonus = gameState.bonusUnlocked;
+  const hintEl = document.getElementById('pick-hint');
+  const bannerEl = document.getElementById('bonus-banner');
+  const maxLabel = document.getElementById('max-select-label');
+  const headerSub = document.querySelector('#year-label').closest('p');
+  if(hintEl) hintEl.innerHTML = 'Browse each category and pick <strong class="text-white">'+(bonus?'4':'3')+' initiatives</strong> total';
+  if(bannerEl) bannerEl.classList.toggle('hidden', !bonus);
+  if(maxLabel) maxLabel.textContent = '/'+(bonus?4:3);
+  // Update header subtitle
+  const yearLabelP = document.getElementById('year-label')?.parentElement;
+  if(yearLabelP) yearLabelP.innerHTML = `<span id="hospital-name-header" class="font-semibold text-emerald-300/90">${_playerName||''}</span> · <span id="year-label">Year ${year}</span> of 7 — Select ${bonus?4:3} Initiatives`;
   document.getElementById('progress').textContent=`${year}`;
   const cr=((STARTING_METRICS.carbon-gameState.metrics.carbon)/STARTING_METRICS.carbon)*100;
   document.getElementById('carbon-percent').textContent=Math.max(0,Math.min(50,cr)).toFixed(1);
@@ -569,14 +585,19 @@ function populateInitiatives(year){
 
 }
 
+function maxSelections(){
+  return gameState.bonusUnlocked ? 4 : 3;
+}
+
 function toggleInitiative(id,card){
   const idx=gameState.selectedInitiatives.indexOf(id);
   if(idx>-1){gameState.selectedInitiatives.splice(idx,1);card.classList.remove('selected');}
   else{
-    if(gameState.selectedInitiatives.length>=3){showNotification('Maximum 3 initiatives per year');return;}
+    if(gameState.selectedInitiatives.length>=maxSelections()){showNotification('Maximum '+maxSelections()+' initiatives this year');return;}
     gameState.selectedInitiatives.push(id);card.classList.add('selected');
   }
   document.getElementById('selection-count').textContent=gameState.selectedInitiatives.length;
+  document.getElementById('max-select-label').textContent='/'+maxSelections();
 }
 
 function updateTrainingBudget(){
@@ -609,8 +630,21 @@ async function confirmYear(){
   gameState.metrics.employee=Math.max(0,Math.min(100,gameState.metrics.employee));
   gameState.metrics.rating=Math.max(0,Math.min(5,gameState.metrics.rating));
   if(gameState.trainingBudget>0){gameState.metrics.employee=Math.min(100,gameState.metrics.employee+2);}
+  // ── Leadership Bonus: unlock +1 selection if both SM and Board are ever selected ──
+  const wasBonus = gameState.bonusUnlocked;
+  if(!gameState.bonusUnlocked &&
+     gameState.allSelectedOverGame.includes('y1-sm') &&
+     gameState.allSelectedOverGame.includes('y1-board')){
+    gameState.bonusUnlocked = true;
+  }
   checkEvents(gameState.currentYear);
   gameState.historyMetrics.push({...gameState.metrics});
+  // ── Show bonus unlock modal if newly unlocked this year ──
+  if(gameState.bonusUnlocked && !wasBonus){
+    gameState.bonusFeedbacks = feedbacks;
+    // Inject bonus as a special event at the start of the queue
+    gameState.triggeredEvents.unshift('leadership-bonus');
+  }
   if(gameState.triggeredEvents.length>0){gameState.pendingEventIndex=0;gameState.storedFeedbacks=feedbacks;showNextEvent();}
   else showResults(feedbacks);
 }
@@ -628,7 +662,15 @@ function checkEvents(year){
 function showNextEvent(){
   if(gameState.pendingEventIndex<gameState.triggeredEvents.length){
     const eid=gameState.triggeredEvents[gameState.pendingEventIndex];
-    if(eid==='carbon-tax'){
+    if(eid==='leadership-bonus'){
+      document.getElementById('event-emoji').textContent='⭐';
+      document.getElementById('event-title').textContent='Leadership Bonus Unlocked!';
+      document.getElementById('event-description').textContent='You have both a Sustainability Manager and Board Involvement active. Your leadership foundation is strong — and your organisation is rewarding it.';
+      document.getElementById('event-impacts').innerHTML=`
+        <div class="text-slate-300 mb-1"><strong>Bonus:</strong> From next year onwards, you may select <strong>4 initiatives per year</strong> instead of 3.</div>
+        <div class="text-slate-300"><strong>Why it matters:</strong> When governance is embedded at both the operational and board level, sustainability programmes move faster and achieve more — reflected here as an extra strategic choice each year.</div>`;
+      document.getElementById('event-modal-overlay').classList.remove('hidden');
+    } else if(eid==='carbon-tax'){
       document.getElementById('event-emoji').textContent='⚡';
       document.getElementById('event-title').textContent='Carbon Tax Imposed!';
       const c=gameState.eventImpacts.tax||465000;
@@ -763,7 +805,7 @@ function resetToWelcome(){
   document.getElementById('end-screen-overlay').classList.add('hidden');
   document.getElementById('game-screen').classList.add('hidden');
   document.getElementById('welcome-screen').classList.remove('hidden');
-  gameState={currentYear:0,metrics:{...STARTING_METRICS},historyMetrics:[{...STARTING_METRICS}],selectedInitiatives:[],trainingBudget:0,allInitiatives:{},carryoverInitiatives:[],triggeredEvents:[],allSelectedOverGame:[],eventImpacts:{},telemedicineSelected:false,pendingEventIndex:0,storedFeedbacks:[]};
+  gameState={currentYear:0,metrics:{...STARTING_METRICS},historyMetrics:[{...STARTING_METRICS}],selectedInitiatives:[],trainingBudget:0,allInitiatives:{},carryoverInitiatives:[],triggeredEvents:[],allSelectedOverGame:[],eventImpacts:{},telemedicineSelected:false,bonusUnlocked:false,pendingEventIndex:0,storedFeedbacks:[]};
   Object.values(charts).forEach(c=>c&&c.destroy());charts={};
 }
 
