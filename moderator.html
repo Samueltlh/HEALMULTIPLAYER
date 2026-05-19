@@ -181,21 +181,7 @@
   </main>
 
   <!-- Footer legend -->
-  <footer class="bg-slate-900/60 border-t border-slate-800 px-6 py-3 flex-shrink-0">
-    <div class="max-w-screen-xl mx-auto flex flex-wrap gap-4 text-sm text-slate-400">
-      <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-slate-700 inline-block"></span> Not started</span>
-      <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-blue-600 inline-block"></span> Playing</span>
-      <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-emerald-600 inline-block"></span> ✓ Target met (≤15,000t)</span>
-      <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-amber-600 inline-block"></span> Finished (no target)</span>
-      <span class="ml-auto text-slate-600">Auto-refreshes every 5 s</span>
-    </div>
-  </footer>
-</div>
-
-  <!-- ═══════════════════════════════════════════
-     COMBINED CHARTS VIEW
-═══════════════════════════════════════════ -->
-  <main id="view-charts" class="hidden flex-1 overflow-y-auto p-6">
+<main id="view-charts" class="hidden flex-1 overflow-y-auto p-6">
     <div class="max-w-screen-xl mx-auto">
       <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
         <div>
@@ -240,6 +226,20 @@
     </div>
   </main>
 
+  <footer class="bg-slate-900/60 border-t border-slate-800 px-6 py-3 flex-shrink-0">
+    <div class="max-w-screen-xl mx-auto flex flex-wrap gap-4 text-sm text-slate-400">
+      <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-slate-700 inline-block"></span> Not started</span>
+      <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-blue-600 inline-block"></span> Playing</span>
+      <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-emerald-600 inline-block"></span> ✓ Target met (≤15,000t)</span>
+      <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-amber-600 inline-block"></span> Finished (no target)</span>
+      <span class="ml-auto text-slate-600">Auto-refreshes every 5 s</span>
+    </div>
+  </footer>
+</div>
+
+  <!-- ═══════════════════════════════════════════
+     COMBINED CHARTS VIEW
+═══════════════════════════════════════════ -->
 
 <!-- ═══════════════════════════════════════════
      PLAYER DETAIL MODAL
@@ -775,6 +775,21 @@ function renderCombinedCharts(players) {
     return { name, color, makeDs, carbonPcts, ratings, elecs, costs, patients, employees };
   });
 
+  /* Dynamic y-axis bounds from actual data + small padding */
+  function dataBounds(dataKey, extraValues, padFrac) {
+    const allVals = series.flatMap(s => s[dataKey].filter(v => v !== null));
+    if (extraValues) extraValues.forEach(v => allVals.push(v));
+    if (allVals.length === 0) return { min: 0, max: 100 };
+    const lo  = Math.min(...allVals);
+    const hi  = Math.max(...allVals);
+    const rng = hi - lo || 1;
+    const pad = rng * (padFrac || 0.08);
+    return {
+      min: parseFloat((lo - pad).toFixed(1)),
+      max: parseFloat((hi + pad).toFixed(1)),
+    };
+  }
+
   /* Common chart options factory */
   function makeOpts(yMin, yMax) {
     return {
@@ -822,26 +837,28 @@ function renderCombinedCharts(players) {
     order: 99,
   };
 
-  /* Build & render each chart */
-  function buildChart(canvasId, dataKey, yMin, yMax, extraDs) {
+  /* Build & render each chart with dynamic bounds */
+  function buildChart(canvasId, dataKey, extraRefVals, extraDs) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
     if (multiCharts[canvasId]) { multiCharts[canvasId].destroy(); delete multiCharts[canvasId]; }
+    const { min, max } = dataBounds(dataKey, extraRefVals, 0.10);
     const datasets = series.map(s => s.makeDs(s[dataKey]));
     if (extraDs) datasets.push(extraDs);
     multiCharts[canvasId] = new Chart(ctx, {
       type: 'line',
       data: { labels: LABELS, datasets },
-      options: makeOpts(yMin, yMax),
+      options: makeOpts(min, max),
     });
   }
 
-  buildChart('mc-carbon',   'carbonPcts', -5,  70,  targetDs);
-  buildChart('mc-rating',   'ratings',    1.5, 5.5, null);
-  buildChart('mc-elec',     'elecs',      15,  45,  null);
-  buildChart('mc-cost',     'costs',      70,  120, null);
-  buildChart('mc-patient',  'patients',   50,  105, null);
-  buildChart('mc-employee', 'employees',  50,  105, null);
+  // extraRefVals ensures target line (50) is always visible on carbon chart
+  buildChart('mc-carbon',   'carbonPcts', [0, 50],  targetDs);
+  buildChart('mc-rating',   'ratings',    [3.0],    null);
+  buildChart('mc-elec',     'elecs',      [40],     null);
+  buildChart('mc-cost',     'costs',      [100],    null);
+  buildChart('mc-patient',  'patients',   [80],     null);
+  buildChart('mc-employee', 'employees',  [80],     null);
 
   /* Render colour-coded player legend */
   const legendEl = document.getElementById('chart-legend');
