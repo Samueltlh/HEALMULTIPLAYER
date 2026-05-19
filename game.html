@@ -233,7 +233,7 @@
 
 <script>
 /* ── FIREBASE CONFIG ── replace with your database URL ── */
-const FIREBASE_DB_URL = 'https://heal-moderator-dashboard-default-rtdb.firebaseio.com';
+const FIREBASE_DB_URL = 'https://YOUR-PROJECT-default-rtdb.firebaseio.com';
 
 let _sessionCode='',_playerId='',_playerName='';
 function _genId(){return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
@@ -543,13 +543,16 @@ function loadYear(year){
   const bannerEl = document.getElementById('bonus-banner');
   const maxLabel = document.getElementById('max-select-label');
   const headerSub = document.querySelector('#year-label').closest('p');
-  const bonusActive = bonus && gameState.bonusUsedCount < 2;
-  const bonusLeft   = bonus ? Math.max(0, 2 - gameState.bonusUsedCount) : 0;
+  const bonusActive = bonus && gameState.bonusStartYear !== null &&
+    (year === gameState.bonusStartYear || year === gameState.bonusStartYear + 1);
+  const bonusYearNum = bonus && gameState.bonusStartYear !== null
+    ? (year === gameState.bonusStartYear ? 1 : year === gameState.bonusStartYear + 1 ? 2 : 0)
+    : 0;
   if(hintEl) hintEl.innerHTML = 'Browse each category and pick <strong class="text-white">'+(bonusActive?'4':'3')+' initiatives</strong> total';
   if(bannerEl){
     bannerEl.classList.toggle('hidden', !bonusActive);
     const bannerMsg = bannerEl.querySelector('span:last-child');
-    if(bannerMsg) bannerMsg.innerHTML = '<strong>Leadership Bonus!</strong> Select <strong>4 initiatives</strong> this year · <strong>' + bonusLeft + ' use' + (bonusLeft===1?'':'s') + ' remaining</strong>';
+    if(bannerMsg) bannerMsg.innerHTML = '<strong>Leadership Bonus — Year ' + bonusYearNum + ' of 2!</strong> Select <strong>4 initiatives</strong> this year.';
   }
   if(maxLabel) maxLabel.textContent = '/'+(bonusActive?4:3);
   // Update header subtitle
@@ -592,7 +595,9 @@ function populateInitiatives(year){
 }
 
 function maxSelections(){
-  return (gameState.bonusUnlocked && gameState.bonusUsedCount < 2) ? 4 : 3;
+  if(!gameState.bonusUnlocked || gameState.bonusStartYear === null) return 3;
+  const yr = gameState.currentYear;
+  return (yr === gameState.bonusStartYear || yr === gameState.bonusStartYear + 1) ? 4 : 3;
 }
 
 function toggleInitiative(id,card){
@@ -636,16 +641,13 @@ async function confirmYear(){
   gameState.metrics.employee=Math.max(0,Math.min(100,gameState.metrics.employee));
   gameState.metrics.rating=Math.max(0,Math.min(5,gameState.metrics.rating));
   if(gameState.trainingBudget>0){gameState.metrics.employee=Math.min(100,gameState.metrics.employee+2);}
-  // ── Track bonus usage: if player selected 4 this year, count it ──
-  if(gameState.bonusUnlocked && gameState.selectedInitiatives.length === 4){
-    gameState.bonusUsedCount = Math.min(2, gameState.bonusUsedCount + 1);
-  }
   // ── Leadership Bonus: unlock +1 selection if both SM and Board are ever selected ──
   const wasBonus = gameState.bonusUnlocked;
   if(!gameState.bonusUnlocked &&
      gameState.allSelectedOverGame.includes('y1-sm') &&
      gameState.allSelectedOverGame.includes('y1-board')){
     gameState.bonusUnlocked = true;
+    gameState.bonusStartYear = gameState.currentYear + 1; // next year is first bonus year
   }
   checkEvents(gameState.currentYear);
   gameState.historyMetrics.push({...gameState.metrics});
@@ -676,9 +678,10 @@ function showNextEvent(){
       document.getElementById('event-emoji').textContent='⭐';
       document.getElementById('event-title').textContent='Leadership Bonus Unlocked!';
       document.getElementById('event-description').textContent='You have both a Sustainability Manager and Board Involvement active. Your leadership foundation is strong — and your organisation is rewarding it.';
+      const nextYr = gameState.bonusStartYear;
       document.getElementById('event-impacts').innerHTML=`
-        <div class="text-slate-300 mb-1"><strong>Bonus:</strong> You may select <strong>4 initiatives</strong> instead of 3 for up to <strong>2 years</strong> of your choosing.</div>
-        <div class="text-slate-300"><strong>Why it matters:</strong> When governance is embedded at both operational and board level, sustainability programmes move faster — but sustaining this pace requires continued organisational focus and resources.</div>`;
+        <div class="text-slate-300 mb-1"><strong>Bonus:</strong> You may select <strong>4 initiatives</strong> instead of 3 for the next <strong>2 consecutive years</strong> (Years ${nextYr} &amp; ${nextYr+1}). After that it reverts to 3 per year.</div>
+        <div class="text-slate-300"><strong>Why it matters:</strong> When governance is embedded at both operational and board level, sustainability programmes move faster — use these 2 bonus years strategically for maximum impact.</div>`;
       document.getElementById('event-modal-overlay').classList.remove('hidden');
     } else if(eid==='carbon-tax'){
       document.getElementById('event-emoji').textContent='⚡';
@@ -815,7 +818,7 @@ function resetToWelcome(){
   document.getElementById('end-screen-overlay').classList.add('hidden');
   document.getElementById('game-screen').classList.add('hidden');
   document.getElementById('welcome-screen').classList.remove('hidden');
-  gameState={currentYear:0,metrics:{...STARTING_METRICS},historyMetrics:[{...STARTING_METRICS}],selectedInitiatives:[],trainingBudget:0,allInitiatives:{},carryoverInitiatives:[],triggeredEvents:[],allSelectedOverGame:[],eventImpacts:{},telemedicineSelected:false,bonusUnlocked:false,bonusUsedCount:0,pendingEventIndex:0,storedFeedbacks:[]};
+  gameState={currentYear:0,metrics:{...STARTING_METRICS},historyMetrics:[{...STARTING_METRICS}],selectedInitiatives:[],trainingBudget:0,allInitiatives:{},carryoverInitiatives:[],triggeredEvents:[],allSelectedOverGame:[],eventImpacts:{},telemedicineSelected:false,bonusUnlocked:false,bonusStartYear:null,pendingEventIndex:0,storedFeedbacks:[]};
   Object.values(charts).forEach(c=>c&&c.destroy());charts={};
 }
 
