@@ -192,8 +192,8 @@
       </div>
       <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <div class="bg-slate-900/60 rounded-2xl border border-slate-700 p-5">
-          <h4 class="text-emerald-400 font-bold mb-1">🌿 Carbon Reduction (%)</h4>
-          <p class="text-slate-500 text-xs mb-3">% reduction from 30,000t baseline · dashed line = 50% target</p>
+          <h4 class="text-emerald-400 font-bold mb-1">🌿 Carbon Emissions (tonnes)</h4>
+          <p class="text-slate-500 text-xs mb-3">Tonnes CO₂e · Baseline: 30,000t · dashed line = 15,000t target</p>
           <div style="position:relative;height:320px;"><canvas id="mc-carbon"></canvas></div>
         </div>
         <div class="bg-slate-900/60 rounded-2xl border border-slate-700 p-5">
@@ -739,21 +739,21 @@ function renderCombinedCharts(players) {
     const color = PLAYER_COLORS[i % PLAYER_COLORS.length];
     const name  = (p.name || ('Player ' + (i + 1))).slice(0, 22);
 
-    const carbonPcts = [0], ratings  = [3.0], elecs    = [40];
-    const costs      = [100], patients = [80],  employees = [80];
+    const carbons  = [30000], ratings   = [3.0], elecs      = [40];
+    const costs    = [100],   patients  = [80],  employees  = [80];
 
     for (let y = 1; y <= 7; y++) {
       const yd = p.years && p.years[y];
       if (yd && yd.metrics) {
         const m = yd.metrics;
-        carbonPcts.push(parseFloat(((30000 - m.carbon) / 30000 * 100).toFixed(1)));
+        carbons.push(m.carbon);
         ratings.push(parseFloat(m.rating.toFixed(2)));
         elecs.push(parseFloat((m.electricity / 1e6).toFixed(1)));
         costs.push(parseFloat((m.cost / 1e6).toFixed(1)));
         patients.push(m.patient);
         employees.push(m.employee);
       } else {
-        carbonPcts.push(null); ratings.push(null); elecs.push(null);
+        carbons.push(null); ratings.push(null); elecs.push(null);
         costs.push(null); patients.push(null); employees.push(null);
       }
     }
@@ -772,25 +772,10 @@ function renderCombinedCharts(players) {
       fill: false,
     });
 
-    return { name, color, makeDs, carbonPcts, ratings, elecs, costs, patients, employees };
+    return { name, color, makeDs, carbons, ratings, elecs, costs, patients, employees };
   });
 
-  /* Dynamic y-axis bounds from actual data + small padding */
-  function dataBounds(dataKey, extraValues, padFrac) {
-    const allVals = series.flatMap(s => s[dataKey].filter(v => v !== null));
-    if (extraValues) extraValues.forEach(v => allVals.push(v));
-    if (allVals.length === 0) return { min: 0, max: 100 };
-    const lo  = Math.min(...allVals);
-    const hi  = Math.max(...allVals);
-    const rng = hi - lo || 1;
-    const pad = rng * (padFrac || 0.08);
-    return {
-      min: parseFloat((lo - pad).toFixed(1)),
-      max: parseFloat((hi + pad).toFixed(1)),
-    };
-  }
-
-  /* Common chart options factory */
+  /* Fixed y-axis scales matching the game charts exactly */
   function makeOpts(yMin, yMax) {
     return {
       responsive: true,
@@ -824,10 +809,10 @@ function renderCombinedCharts(players) {
     };
   }
 
-  /* Target reference line dataset (carbon 50%) */
+  /* Target reference line dataset — carbon at 15,000t */
   const targetDs = {
-    label: '— Target 50%',
-    data: Array(N).fill(50),
+    label: '— Target 15,000t',
+    data: Array(N).fill(15000),
     borderColor: '#22c55e',
     borderDash: [7, 4],
     borderWidth: 1.5,
@@ -837,28 +822,27 @@ function renderCombinedCharts(players) {
     order: 99,
   };
 
-  /* Build & render each chart with dynamic bounds */
-  function buildChart(canvasId, dataKey, extraRefVals, extraDs) {
+  /* Build & render each chart with fixed scales */
+  function buildChart(canvasId, dataKey, yMin, yMax, extraDs) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
     if (multiCharts[canvasId]) { multiCharts[canvasId].destroy(); delete multiCharts[canvasId]; }
-    const { min, max } = dataBounds(dataKey, extraRefVals, 0.10);
     const datasets = series.map(s => s.makeDs(s[dataKey]));
     if (extraDs) datasets.push(extraDs);
     multiCharts[canvasId] = new Chart(ctx, {
       type: 'line',
       data: { labels: LABELS, datasets },
-      options: makeOpts(min, max),
+      options: makeOpts(yMin, yMax),
     });
   }
 
-  // extraRefVals ensures target line (50) is always visible on carbon chart
-  buildChart('mc-carbon',   'carbonPcts', [0, 50],  targetDs);
-  buildChart('mc-rating',   'ratings',    [3.0],    null);
-  buildChart('mc-elec',     'elecs',      [40],     null);
-  buildChart('mc-cost',     'costs',      [100],    null);
-  buildChart('mc-patient',  'patients',   [80],     null);
-  buildChart('mc-employee', 'employees',  [80],     null);
+  // Same fixed scales as the game
+  buildChart('mc-carbon',   'carbons',    10000, 32000, targetDs);
+  buildChart('mc-rating',   'ratings',      1.5,   5.5, null);
+  buildChart('mc-elec',     'elecs',         20,    45,  null);
+  buildChart('mc-cost',     'costs',         90,   115,  null);
+  buildChart('mc-patient',  'patients',      60,   105,  null);
+  buildChart('mc-employee', 'employees',     60,   105,  null);
 
   /* Render colour-coded player legend */
   const legendEl = document.getElementById('chart-legend');
